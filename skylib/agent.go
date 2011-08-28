@@ -126,7 +126,7 @@ func NewAgent() *Agent {
 	ConnectStore()
 	LoadRegistry()
 	if x := recover(); x != nil {
-		LogWarn("No Registryuration File loaded.  Creating One.")
+		LogWarn("No Config loaded.  Creating One.")
 	}
 
 	node := &Agent{Name: name}
