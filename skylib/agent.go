@@ -71,7 +71,7 @@ func RegisterAgentHeartbeat() {
 	sig := &CommonService{}
 	server := NewRpcService(sig)
 	go server.Serve(make(chan bool))
-	AddToRegistry(server)
+	server.AddToRegistry()
 }
 
 
@@ -112,7 +112,7 @@ func (self *Agent) Wait() *Agent {
 // Skynet Server.
 func (self *Agent) Register(sig interface{}) *Agent {
 	server := NewRpcService(sig)
-	AddToRegistry(server)
+	server.AddToRegistry()
 	self.Servers = append(self.Servers, server)
 	return self
 }

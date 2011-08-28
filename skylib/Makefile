@@ -10,9 +10,7 @@ GOFILES=\
 	config.go\
 	constants.go\
 	doc.go\
-	doozer_store.go\
-	flocker.go\
-	fsstore.go\
+	mongo_store.go\
 	log.go\
 	rand.go\
 	registry.go\
