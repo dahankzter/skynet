@@ -10,35 +10,33 @@ package skylib
 
 import (
 	"log"
-	"json"
+	//	"json"
 	"flag"
 	"os"
-	"github.com/ha/doozer"
 	"fmt"
 	"rand"
 	"rpc"
 	"expvar"
 	"syscall"
 	"os/signal"
+	"launchpad.net/gobson/bson"
+	"launchpad.net/mgo"
 )
 
-
-var DC *doozer.Conn
+var MC *mgo.Session
 var NS *NetworkServers
 var RpcServices []*RpcService
-
 
 var Port *int = flag.Int("port", 9999, "tcp port to listen")
 var Name *string = flag.String("name", "changeme", "name of this server")
 var BindIP *string = flag.String("bindaddress", "127.0.0.1", "address to bind")
 var LogFileName *string = flag.String("logFileName", "myservice.log", "name of logfile")
 var LogLevel *int = flag.Int("logLevel", 1, "log level (1-5)")
-var DoozerServer *string = flag.String("doozerServer", "127.0.0.1:8046", "addr:port of doozer server")
+var MongoServer *string = flag.String("mongoServer", "127.0.0.1", "addr of mongo server")
 var Requests *expvar.Int
 var Errors *expvar.Int
 var Goroutines *expvar.Int
 var svc *Service
-
 
 // This is simple today - it returns the first listed service that matches the request
 // Load balancing needs to be applied here somewhere.
@@ -74,33 +72,50 @@ func GetRandomClientByProvides(provides string) (*rpc.Client, os.Error) {
 	return newClient, nil
 }
 
-
-func DoozerConnect() {
+func MongoConnect() {
 	var err os.Error
-	DC, err = doozer.Dial(*DoozerServer)
+	MC, err = mgo.Mongo("127.0.0.1")
 	if err != nil {
-		log.Panic(err.String())
+		panic(err)
 	}
+
 }
 
 // on startup load the configuration file. 
 // After the config file is loaded, we set the global config file variable to the
 // unmarshaled data, making it useable for all other processes in this app.
 func LoadConfig() {
-	data, _, err := DC.Get("/servers/config/networkservers.conf", nil)
-	if err != nil {
-		log.Panic(err.String())
-	}
-	if len(data) > 0 {
-		setConfig(data)
-		return
-	}
-	LogError("Error loading default config - no data found")
 	NS = &NetworkServers{}
+	NS.Services = make([]*Service, 0)
+	var service Service
+	c := MC.DB("skynet").C("config")
+	iter, err := c.Find(nil).Iter()
+	if err != nil {
+		log.Panic(err)
+	}
+	for {
+		err = iter.Next(&service)
+		if err != nil {
+			break
+		}
+		fmt.Println(service)
+		NS.Services = append(NS.Services, &service)
+	}
+	if err != mgo.NotFound {
+		log.Panic(err)
+	}
+
 }
 
 func RemoveServiceAt(i int) {
 
+	s := NS.Services[i]
+	c := MC.DB("skynet").C("config")
+
+	err := c.Remove(bson.M{"ipaddress": s.IPAddress, "name": s.Name, "port": s.Port, "provides": s.Provides})
+	if err != nil {
+		log.Panic(err)
+	}
 	newServices := make([]*Service, 0)
 
 	for k, v := range NS.Services {
@@ -110,23 +125,19 @@ func RemoveServiceAt(i int) {
 			}
 		}
 	}
+
 	NS.Services = newServices
-	b, err := json.Marshal(NS)
-	if err != nil {
-		log.Panic(err.String())
-	}
-	rev, err := DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-	_, err = DC.Set("/servers/config/networkservers.conf", rev, b)
-	if err != nil {
-		log.Panic(err.String())
-	}
 
 }
 
 func (r *Service) RemoveFromConfig() {
+
+	c := MC.DB("skynet").C("config")
+
+	err := c.Remove(bson.M{"ipaddress": r.IPAddress, "name": r.Name, "port": r.Port, "provides": r.Provides})
+	if err != nil {
+		log.Panic(err)
+	}
 
 	newServices := make([]*Service, 0)
 
@@ -139,18 +150,6 @@ func (r *Service) RemoveFromConfig() {
 		}
 	}
 	NS.Services = newServices
-	b, err := json.Marshal(NS)
-	if err != nil {
-		log.Panic(err.String())
-	}
-	rev, err := DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-	_, err = DC.Set("/servers/config/networkservers.conf", rev, b)
-	if err != nil {
-		log.Panic(err.String())
-	}
 }
 
 func (r *Service) AddToConfig() {
@@ -163,51 +162,40 @@ func (r *Service) AddToConfig() {
 		}
 	}
 	NS.Services = append(NS.Services, r)
-	b, err := json.Marshal(NS)
-	if err != nil {
-		log.Panic(err.String())
-	}
-	rev, err := DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-	_, err = DC.Set("/servers/config/networkservers.conf", rev, b)
-	if err != nil {
-		log.Panic(err.String())
-	}
-}
 
-// unmarshal data from remote store into global config variable
-func setConfig(data []byte) {
-	err := json.Unmarshal(data, &NS)
+	c := MC.DB("skynet").C("config")
+
+	err := c.Insert(r)
 	if err != nil {
 		log.Panic(err.String())
 	}
+
 }
 
 // Watch for remote changes to the config file.  When new changes occur
 // reload our copy of the config file.
 // Meant to be run as a goroutine continuously.
 func WatchConfig() {
-	rev, err := DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-	for {
-
-		// blocking wait call returns on a change
-		ev, err := DC.Wait("/servers/config/networkservers.conf", rev)
+	/*
+		rev, err := DC.Rev()
 		if err != nil {
 			log.Panic(err.String())
 		}
-		log.Println("Received new configuration.  Setting local config.")
-		setConfig(ev.Body)
+		for {
 
-		rev = ev.Rev + 1
-	}
+			// blocking wait call returns on a change
+			ev, err := DC.Wait("/servers/config/networkservers.conf", rev)
+			if err != nil {
+				log.Panic(err.String())
+			}
+			log.Println("Received new configuration.  Setting local config.")
+			setConfig(ev.Body)
+
+			rev = ev.Rev + 1
+		}
+	*/
 
 }
-
 
 func initDefaultExpVars(name string) {
 	Requests = expvar.NewInt(name + "-processed")
@@ -243,13 +231,12 @@ func gracefulShutdown() {
 
 	//would prefer to unregister HTTP and RPC handlers
 	//need to figure out how to do that
-	syscall.Sleep(10e9) // wait 10 seconds for requests to finish  #HACK
+	syscall.Sleep(10e9) // wait 10 seconds for requests to finish  #HACK?
 	syscall.Exit(0)
 }
 
-
 func Setup(name string) {
-	DoozerConnect()
+	MongoConnect()
 	LoadConfig()
 	if x := recover(); x != nil {
 		LogWarn("No Configuration File loaded.  Creating One.")

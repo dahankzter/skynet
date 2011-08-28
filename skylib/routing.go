@@ -8,29 +8,34 @@
 package skylib
 
 import (
-	"json"
+	"launchpad.net/gobson/bson"
 	"os"
 )
-
 
 // Function to retrieve a route by name from Doozer
 // Returns a route, or error.
 func GetRoute(name string) (r *Route, err os.Error) {
-
-	data, _, err := DC.Get("/routes/"+name, nil)
-	if err != nil {
-		LogError(err.String())
-		return r, err
-	}
-	if len(data) > 0 {
-		err := json.Unmarshal(data, &r)
+	/*
+		data, _, err := DC.Get("/routes/"+name, nil)
 		if err != nil {
 			LogError(err.String())
 			return r, err
 		}
-		return r, nil
-	}
+		if len(data) > 0 {
+			err := json.Unmarshal(data, &r)
+			if err != nil {
+				LogError(err.String())
+				return r, err
+			}
+			return r, nil
+		}
+	*/
+	c := MC.DB("skynet").C("routes")
 
-	return r, os.NewError("No route found")
+	 err = c.Find(bson.M{"name": name}).One(&r)
+	if err != nil {
+		return r, err
+	}
+	return r, nil
 
 }
