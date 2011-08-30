@@ -7,11 +7,12 @@ import (
 	"flag"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
+	"sync"
 )
 
 
 var MongoServer *string = flag.String("mongoServer", "127.0.0.1", "address of mongo server")
-
+var update sync.Mutex
 
 
 func RemoveServiceAt(i int) {
@@ -62,25 +63,30 @@ func LoadRegistry() {
 		if err != nil {
 			break
 		}
-		fmt.Println(service)
-		NOS.Services = append(NOS.Services, &service)
+		fmt.Println("Loaded from MGO: ", service)
+		newService := service
+		NOS.Services = append(NOS.Services, &newService)
 	}
 	if err != mgo.NotFound {
 		log.Panic(err)
 	}
+	fmt.Println(len(NOS.Services))
 
 }
 
 func (r *RpcService) AddToRegistry() {
+	fmt.Println("Length before adding to Registry", len(NOS.Services))
 	for _, v := range NOS.Services {
 		if v != nil {
 			if v.Equal(r) {
 				LogInfo(fmt.Sprintf("Skipping adding %s : alreday exists.", v.Provides))
+				fmt.Println("IF we see this, there could be trouble.")
 				return // it's there so we don't need an update
 			}
 		}
 	}
 	NOS.Services = append(NOS.Services, r)
+	fmt.Println("Length after adding to Registry", len(NOS.Services))
 
 	c := MC.DB("skynet").C("config")
 
@@ -158,6 +164,8 @@ func WatchRegistry() {
 			rev = ev.Rev + 1
 		}
 	*/
+
+	
 
 }
 

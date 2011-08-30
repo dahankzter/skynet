@@ -22,7 +22,13 @@ var NOS *RegisteredNetworkServers
 
 // Return a list of all RpcServices which provide the named Service.
 func GetAllServiceProviders(classname string) (serverList []*RpcService) {
+	fmt.Println("Seeking ", classname)
+	fmt.Println("NOS Services Length: ", len(NOS.Services))
+	fmt.Println(NOS.Services)
+
 	for _, v := range NOS.Services {
+		fmt.Println(v)
+
 		if v != nil && v.Provides == classname {
 			serverList = append(serverList, v)
 		}

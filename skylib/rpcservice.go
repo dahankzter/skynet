@@ -82,6 +82,7 @@ func (this *RpcService) Equal(that *RpcService) bool {
 func NewRpcService(sig interface{}) *RpcService {
 	////star_name := reflect.TypeOf(sig).String())
 	type_name := reflect.Indirect(reflect.ValueOf(sig)).Type().Name()
+	fmt.Println(type_name)
 	rpc.Register(sig)
 	r := &RpcService{
 		Port:      *Port,

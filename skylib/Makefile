@@ -7,17 +7,15 @@ TARG=github.com/bketelsen/skynet/skylib
 GOFILES=\
 	agent.go\
 	common.go\
-	config.go\
 	constants.go\
 	doc.go\
+	globals.go\
 	mongo_store.go\
 	log.go\
 	rand.go\
 	registry.go\
-	routing.go\
 	rpcservice.go\
 	service.go\
-	store.go\
 	types.go\
 
 # gb: this is the local install
