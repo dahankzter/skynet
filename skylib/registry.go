@@ -9,8 +9,6 @@
 package skylib
 
 import (
-	"log"
-	"json"
 	"os"
 	"fmt"
 	"rand"
@@ -24,7 +22,13 @@ var NOS *RegisteredNetworkServers
 
 // Return a list of all RpcServices which provide the named Service.
 func GetAllServiceProviders(classname string) (serverList []*RpcService) {
+	fmt.Println("Seeking ", classname)
+	fmt.Println("NOS Services Length: ", len(NOS.Services))
+	fmt.Println(NOS.Services)
+
 	for _, v := range NOS.Services {
+		fmt.Println(v)
+
 		if v != nil && v.Provides == classname {
 			serverList = append(serverList, v)
 		}
@@ -37,7 +41,7 @@ func GetAllClientsByService(classname string) (clientList []*rpc.Client) {
 	var err os.Error
 	serviceList := GetAllServiceProviders(classname)
 
-	for i, s := range(serviceList) {
+	for i, s := range serviceList {
 		hostString := fmt.Sprintf("%s:%d", s.IPAddress, s.Port)
 		protocol := strings.ToLower(s.Protocol) // to be safe
 		switch protocol {
@@ -65,7 +69,10 @@ func GetRandomClientByService(classname string) (*rpc.Client, os.Error) {
 	var err os.Error
 	serviceList := GetAllServiceProviders(classname)
 
-	if len(serviceList) > 0 {
+	println("len:", len(serviceList))
+	LogWarn("Test LogWarn")
+	LogError("Test LogError")
+	for len(serviceList) > 0 {
 		chosen := rand.Int() % len(serviceList)
 		s := serviceList[chosen]
 
@@ -79,141 +86,24 @@ func GetRandomClientByService(classname string) (*rpc.Client, os.Error) {
 		}
 
 		if err != nil {
+			println(fmt.Sprintf("Found %d nodes to provide service %s requested on %s, but failed to connect.",
+				len(serviceList), classname, hostString))
 			LogWarn(fmt.Sprintf("Found %d nodes to provide service %s requested on %s, but failed to connect.",
 				len(serviceList), classname, hostString))
-			return nil, NewError(NO_CLIENT_PROVIDES_SERVICE, classname)
+			s.RemoveFromRegistry()
+			l := len(serviceList)
+			// We should just remove 'chosen', but for now:
+			serviceList = GetAllServiceProviders(classname)
+			if l == len(serviceList) {panic("WTF?")}
+			continue
+			//return nil, NewError(NO_CLIENT_PROVIDES_SERVICE, classname)
 		}
-
-	} else {
-		LogWarn(fmt.Sprintf("Found no node to provide service %s.", classname))
-		return nil, NewError(NO_CLIENT_PROVIDES_SERVICE, classname)
+		// We have connected.
+		return newClient, nil
 	}
-	return newClient, nil
+	println(fmt.Sprintf("Found no node to provide service %s.", classname))
+	LogWarn(fmt.Sprintf("Found no node to provide service %s.", classname))
+	return nil, NewError(NO_CLIENT_PROVIDES_SERVICE, classname)
 }
 
 
-// on startup load the configuration file. 
-// After the config file is loaded, we set the global config file variable to the
-// unmarshaled data, making it useable for all other processes in this app.
-func LoadRegistry() {
-	data, _, err := DC.Get("/servers/config/networkservers.conf", nil)
-	if err != nil {
-		log.Panic(err.String())
-	}
-	if len(data) > 0 {
-		setRegistry(data)
-		return
-	}
-	LogError("Error loading default config - no data found")
-	NOS = &RegisteredNetworkServers{}
-}
-
-func RemoveService(i int) {
-
-	newServices := make([]*RpcService, 0)
-
-	for k, v := range NOS.Services {
-		if k != i {
-			if v != nil {
-				newServices = append(newServices, v)
-			}
-		}
-	}
-	NOS.Services = newServices
-	b, err := json.Marshal(NOS)
-	if err != nil {
-		log.Panic(err.String())
-	}
-	rev, err := DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-	_, err = DC.Set("/servers/config/networkservers.conf", rev, b)
-	if err != nil {
-		log.Panic(err.String())
-	}
-
-}
-
-func RemoveFromRegistry(r *RpcService) {
-
-	newServices := make([]*RpcService, 0)
-
-	for _, v := range NOS.Services {
-		if v != nil {
-			if !v.Equal(r) {
-				newServices = append(newServices, v)
-			}
-
-		}
-	}
-	NOS.Services = newServices
-	b, err := json.Marshal(NOS)
-	if err != nil {
-		log.Panic(err.String())
-	}
-	rev, err := DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-	_, err = DC.Set("/servers/config/networkservers.conf", rev, b)
-	if err != nil {
-		log.Panic(err.String())
-	}
-}
-
-func AddToRegistry(r *RpcService) {
-	for _, v := range NOS.Services {
-		if v != nil {
-			if v.Equal(r) {
-				LogInfo(fmt.Sprintf("Skipping adding %s : alreday exists.", v.Provides))
-				return // it's there so we don't need an update
-			}
-		}
-	}
-	NOS.Services = append(NOS.Services, r)
-	LogDebug("Added", r.Provides, r.Protocol)
-	b, err := json.Marshal(NOS)
-	if err != nil {
-		log.Panic(err.String())
-	}
-	rev, err := DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-	_, err = DC.Set("/servers/config/networkservers.conf", rev, b)
-	if err != nil {
-		log.Panic(err.String())
-	}
-}
-
-// unmarshal data from remote store into global config variable
-func setRegistry(data []byte) {
-	err := json.Unmarshal(data, &NOS)
-	if err != nil {
-		log.Panic(err.String())
-	}
-}
-
-// Watch for remote changes to the config file.  When new changes occur
-// reload our copy of the config file.
-// Meant to be run as a goroutine continuously.
-func WatchRegistry() {
-	rev, err := DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-
-	for {
-		// blocking wait call returns on a change
-		ev, err := DC.Wait("/servers/config/networkservers.conf", rev)
-		if err != nil {
-			log.Panic("Error waiting on config: " + err.String())
-		}
-		log.Println("Received new configuration.  Setting local config.")
-		setRegistry(ev.Body)
-
-		rev = ev.Rev + 1
-	}
-
-}

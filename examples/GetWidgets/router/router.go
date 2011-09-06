@@ -95,7 +95,7 @@ func main() {
 
 	agent := skylib.NewAgent().Start()
 
-	CreateInitialRoute()
+	route := CreateInitialRoute()
 
 	route, err = skylib.GetRoute(sName)
 	if err != nil {
@@ -106,13 +106,11 @@ func main() {
 	agent.Register(r).Wait()
 }
 
-// Today this function creates a route in Doozer for the
-// RouteService.RouteCreditRequest method - which is CLARITY SPECIFIC
-// and adds it too Doozer
-func CreateInitialRoute() {
+// To change a route, make a new router and kill
+// the old ones.
+func CreateInitialRoute() (r *skylib.Route) {
 
 	// Create a basic Route object.
-	r := &skylib.Route{}
 	r.Name = sName
 	r.LastUpdated = time.Seconds()
 	r.Revision = 1
@@ -123,25 +121,5 @@ func CreateInitialRoute() {
 
 	// Just one, for now.
 	r.RouteList.Push(rpcScore)
-
-	// Marshal the route object into JSON.
-	b, err := json.Marshal(r)
-	if err != nil {
-		log.Panic(err.String())
-	}
-
-	// Get the current revision number of the doozer "store".
-	rev, err := skylib.DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-
-	// Set the contents of a file in the "store" to our JSON
-	// string, if the file has not been modified since rev.
-	filename := "/routes/" + sName
-	_, err = skylib.DC.Set(filename, rev, b)
-	if err != nil {
-		log.Panic(err.String())
-	}
 	return
 }
