@@ -20,7 +20,6 @@ type ServerRegistry interface {
 	Equal(that interface{}) bool
 }
 
-
 // This struct will be serialized and passed to Registry.
 // If this is really a Server, then Provides should really be a list of
 // all the Service classes provided by this Server.
@@ -29,7 +28,7 @@ type RpcService struct {
 	Port      int
 	Provides  string // Class name, not any specific method.
 	Protocol  string // json, etc.
-	l 		  net.Listener
+	l         net.Listener
 }
 
 func (r *RpcService) parseError(err string) {
@@ -39,7 +38,6 @@ func (r *RpcService) parseError(err string) {
 // At the moment, this can start more than one Server on the same
 // port, which could be a problem.
 func (self *RpcService) Serve(done chan bool) {
-
 
 	switch self.Protocol {
 	default:
@@ -99,12 +97,11 @@ func NewRpcService(sig interface{}) *RpcService {
 		log.Fatal("listen error:", e)
 	}
 	r.l = l
-	t, e := net.ResolveTCPAddr("tcp",l.Addr().String())
+	t, e := net.ResolveTCPAddr("tcp", l.Addr().String())
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
 	r.Port = t.Port
-
 
 	return r
 }

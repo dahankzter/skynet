@@ -17,7 +17,6 @@ import (
 	"strings"
 )
 
-
 var NOS *RegisteredNetworkServers
 
 // Return a list of all RpcServices which provide the named Service.
@@ -94,7 +93,9 @@ func GetRandomClientByService(classname string) (*rpc.Client, os.Error) {
 			l := len(serviceList)
 			// We should just remove 'chosen', but for now:
 			serviceList = GetAllServiceProviders(classname)
-			if l == len(serviceList) {panic("WTF?")}
+			if l == len(serviceList) {
+				panic("WTF?")
+			}
 			continue
 			//return nil, NewError(NO_CLIENT_PROVIDES_SERVICE, classname)
 		}
@@ -105,5 +106,3 @@ func GetRandomClientByService(classname string) (*rpc.Client, os.Error) {
 	LogWarn(fmt.Sprintf("Found no node to provide service %s.", classname))
 	return nil, NewError(NO_CLIENT_PROVIDES_SERVICE, classname)
 }
-
-

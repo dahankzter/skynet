@@ -16,7 +16,6 @@ import (
 	"os/signal"
 )
 
-
 func initLogging() {
 	f, err := os.OpenFile(*LogFileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err == nil {
@@ -73,7 +72,6 @@ func RegisterAgentHeartbeat() {
 	go server.Serve(make(chan bool))
 	server.AddToRegistry()
 }
-
 
 // A Generic struct to represent any process in the SkyNet system.
 type Agent struct {

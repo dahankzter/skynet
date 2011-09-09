@@ -13,7 +13,6 @@ import (
 	"os"
 )
 
-
 // A HeartbeatRequest is the struct that is sent for ping checks.
 type HeartbeatRequest struct {
 	Timestamp int64
@@ -30,13 +29,11 @@ type HealthCheckRequest struct {
 	Timestamp int64
 }
 
-
 // HealthCheckResponse is the struct that is sent back to the HealthCheckRequest-er
 type HealthCheckResponse struct {
 	Timestamp int64
 	Load      float64
 }
-
 
 // A Route represents an ordered list of RPC calls that should be made for 
 // a request.  Routes are versioned and named.  Names should correspond to 
