@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=skynet-reaper
+TARG=reaper
 GOFILES=\
 	reaper.go\
 
