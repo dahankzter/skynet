@@ -19,7 +19,7 @@ import (
 func initLogging() {
 	f, err := os.OpenFile(*LogFileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err == nil {
-		defer f.Close()
+		//defer f.Close()
 		log.SetOutput(f)
 	}
 }

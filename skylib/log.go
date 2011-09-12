@@ -11,14 +11,12 @@ import (
 	"log"
 )
 
-
 const (
 	error = iota
 	warn
 	info
 	debug
 )
-
 
 func lg(logLevel int, v ...interface{}) {
 

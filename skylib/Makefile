@@ -12,7 +12,6 @@ GOFILES=\
 	globals.go\
 	mongo_store.go\
 	log.go\
-	rand.go\
 	registry.go\
 	rpcservice.go\
 	service.go\

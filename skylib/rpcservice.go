@@ -43,10 +43,10 @@ func (self *RpcService) Serve(done chan bool) {
 	default:
 		rpc.HandleHTTP() // Seems safe to call multiple times, but must
 		// that precede net.Listen()?
-		log.Println("Starting http server")
+		LogDebug("Starting http server")
 		http.Serve(self.l, nil)
 	case "json":
-		log.Println("Starting jsonrpc server")
+		LogDebug("Starting jsonrpc server")
 		for {
 			conn, err := self.l.Accept()
 			if err != nil {
@@ -80,7 +80,6 @@ func (this *RpcService) Equal(that *RpcService) bool {
 func NewRpcService(sig interface{}) *RpcService {
 	////star_name := reflect.TypeOf(sig).String())
 	type_name := reflect.Indirect(reflect.ValueOf(sig)).Type().Name()
-	fmt.Println(type_name)
 	rpc.Register(sig)
 	r := &RpcService{
 		Port:      *Port,
@@ -90,7 +89,7 @@ func NewRpcService(sig interface{}) *RpcService {
 	}
 
 	portString := fmt.Sprintf("%s:%d", r.IPAddress, r.Port)
-	log.Println(portString)
+	LogDebug("Listening on : ", portString)
 
 	l, e := net.Listen("tcp", portString)
 	if e != nil {
@@ -102,6 +101,7 @@ func NewRpcService(sig interface{}) *RpcService {
 		log.Fatal("listen error:", e)
 	}
 	r.Port = t.Port
+	*Port = t.Port
 
 	return r
 }

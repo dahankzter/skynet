@@ -76,11 +76,14 @@ func (r *RpcService) AddToRegistry() {
 func (r *RpcService) RemoveFromRegistry() {
 
 	c := MC.DB("skynet").C("config")
+	LogDebug(fmt.Sprintf("Removing %s:%d providing %s over %s", r.IPAddress, r.Port, r.Provides, r.Protocol))
 
 	err := c.Remove(bson.M{"ipaddress": r.IPAddress, "provides": r.Provides, "port": r.Port, "protocol": r.Protocol})
 	if err != nil {
 		log.Panic(err)
 	}
+
+	LoadRegistry()
 
 }
 
@@ -115,7 +118,7 @@ func WatchRegistry() {
 			if err != nil {
 				break
 			}
-			fmt.Println("Loaded from MGO: ", service)
+			LogDebug("Loaded from MGO: ", service)
 			newService := service
 			NewNOS.Services = append(NOS.Services, &newService)
 		}
