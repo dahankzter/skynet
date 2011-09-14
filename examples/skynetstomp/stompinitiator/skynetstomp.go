@@ -19,16 +19,7 @@ var stompserver *string = flag.String("stompserver", "stomp.local", "stomp serve
 var login *string = flag.String("login", "skynetuser", "stomp login")
 var passcode *string = flag.String("passcode", "changeme", "stomp passcode")
 
-func startHttpServer(addr string) (err os.Error) {
-	httpPort, err := net.Listen("tcp", addr)
-	if err != nil {
-		return
-	}
-	go http.Serve(httpPort, nil)
-	return
-}
-
-func processMessage(request map[string]interface{}) {
+func processStompMessage(request map[string]interface{}) {
 	service := "StompRouter"
 	client, _ := skylib.GetRandomClientByService(service)
 
@@ -56,11 +47,6 @@ func main() {
 		fmt.Println("Subscribe error: %v", e)
 	}
 
-	e = startHttpServer(":8080")
-	if e != nil {
-		fmt.Println("unable to start http server")
-	}
-
 	for i := range c.Stompdata {
 		if i.Error != nil {
 			fmt.Println("Receive error: %v", i.Error)
@@ -72,7 +58,7 @@ func main() {
 		if e != nil {
 			fmt.Println("Unmarshal error " + e.String())
 		}
-		processMessage(out)
+		processStompMessage(out)
 
 	}
 
