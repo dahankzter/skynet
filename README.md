@@ -7,7 +7,7 @@ http://groups.google.com/group/skynet-dev
 Skynet is a virtually–unkillable system for building massively distributed apps in Go.
 
 ##Tell me more:
-Servers die, stop communicating, catch on fire, get killed by robots from the future, and should not be trusted. If your site won’t work with a Chaos Monkey, it isn’t safe. Enter Skynet. Each Skynet module is self–contained, self–aware, and self–replicating – if you have one server with an authentication module on it, and that server melts, Skynet will notice and stop using it.  You also have the option of creating watchers that ensure that there are enough of each particular process running. 
+Servers die, stop communicating, catch on fire, get killed by robots from the future, and should not be trusted. If your site won’t work with a Chaos Monkey, it isn’t safe. Enter Skynet. Each Skynet module is self–contained, self–aware, and self–replicating – if you have one server with an authentication module on it, and that server melts, Skynet will notice and stop using it.  You also have the option of creating watchers/spawners that ensure that there are enough of each particular process running. 
 
 Skynet probably won’t die unless your data center gets hit by a comet.  We recommend at least 2 data centers in that scenario.
 
