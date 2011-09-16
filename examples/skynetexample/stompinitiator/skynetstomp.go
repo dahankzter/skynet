@@ -29,9 +29,9 @@ func processStompMessage(request map[string]interface{}) {
 	var inquiry map[string]interface{}
 	inquiry = request["inquiry"].(bson.M)
 	req.FirstName = inquiry["first_name"].(string)
-	fmt.Println(req.FirstName)
+	skylib.LogDebug(req.FirstName)
 	client.Call(service+".RouteXmlResponse", req, &response)
-	fmt.Println(response.Status)
+	skylib.LogDebug(response.Status)
 }
 
 func main() {

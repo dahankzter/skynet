@@ -25,7 +25,6 @@ func monitorServices() {
 		skylib.ConnectStore()
 		skylib.LoadRegistry()
 		for _, v := range skylib.NOS.Services {
-			fmt.Println(v)
 			var newClient *rpc.Client
 			var err os.Error
 
@@ -40,7 +39,8 @@ func monitorServices() {
 			}
 			if err != nil {
 				//REMOVE HERE
-				fmt.Println("Bad Service found %s:%d", v.IPAddress, v.Port)
+				error := fmt.Sprintf("Bad Service found %s:%d", v.IPAddress, v.Port)
+				skylib.LogError(error)
 				v.RemoveFromRegistry()
 				break
 			}

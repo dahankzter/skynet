@@ -19,7 +19,7 @@ SkyNet is built on the premise that there will be at least three distinct proces
 1. (Optional) Watchers -Watchers are tasks that run and know about the system, but aren't responding to individual requests.  An example of a watcher would be a process that watches the other processes in the system and reports on statistics or availability.  The Reaper is a specialized watcher that checks each Skynet cluster member, culling dead processes from the configuration.
 
 ##Shut up and tell me what to do!
-Install [Go](http://golang.org) MongoDB
+Install [Go](http://golang.org) and MongoDB
 
 	 goinstall github.com/bketelsen/skynet/skygen
 	 goinstall github.com/bketelsen/skynet/skylib

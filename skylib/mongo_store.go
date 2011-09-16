@@ -51,14 +51,14 @@ func LoadRegistry() {
 		if err != nil {
 			break
 		}
-		fmt.Println("Loaded from MGO: ", service)
+		LogDebug("Loaded from MGO: ", service)
 		newService := service
 		NOS.Services = append(NOS.Services, &newService)
 	}
 	if err != mgo.NotFound {
 		log.Panic(err)
 	}
-	fmt.Println(len(NOS.Services))
+	LogDebug("Service Count: ", len(NOS.Services))
 
 }
 
@@ -118,7 +118,7 @@ func WatchRegistry() {
 			if err != nil {
 				break
 			}
-			LogDebug("Loaded from MGO: ", service)
+			go LogDebug("Loaded from MGO: ", service)
 			newService := service
 			NewNOS.Services = append(NOS.Services, &newService)
 		}
@@ -127,7 +127,7 @@ func WatchRegistry() {
 		}
 
 		NOS = NewNOS
-		LogDebug("Reloading Services from Registry")
+		go LogDebug("Reloading Services from Registry")
 		time.Sleep(3e9)
 	}
 
