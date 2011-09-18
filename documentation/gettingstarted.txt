@@ -1,0 +1,39 @@
+Getting Started:
+
+The skygen command generates a source tree with a running sample application.  After running skygen, cd into your target directory and build each service.  We use the awesome [go-gb](https://github.com/skelterjohn/go-gb).  Using gb, you simply issue the command "gb" from the root directory.  Each service will be compiled, and the executable will be named the same as its containing folder.  If you're following along, you'll have:
+
+	skynetTest/
+	skynetTest/bin/
+	skynetTest/bin/router
+	skynetTest/bin/service
+	skynetTest/bin/watcher
+	skynetTest/bin/reaper
+	skynetTest/bin/initiator
+			
+Before you can run skynet you'll need to have mongodb process running.  
+Now start each service, on a different port:
+
+	 bin/service -name=getwidgets -port=9200 &
+	 bin/initiator -name=webinitiator -port=9300 &
+	 bin/router -name=router -port=9100 &
+ 	 bin/reaper -name=reaper -port=9000 &
+
+
+Now, go to http://127.0.0.1:9100/debug/vars (if you haven't killed that router process... if you have find any other process and substitute the port).  Skynet automatically exports statistical variables in JSON format:
+
+	{
+	...
+	"RouteService.RouteGetACHDataRequest-goroutines": 29,
+	"cmdline": ["bin/routers","-name=router","-port=9100"],
+	"RouteService.RouteGetACHDataRequest-processed": 3030,
+	"RouteService.RouteGetACHDataRequest-errors": 2
+	}
+	
+##Running Processes
+
+* Sending SIGUSR1 to a running process raises the log level one notch.
+* Sending SIGUSR2 to a running process lowers the log level one notch.
+* Sending SIGINT to a running process gracefully exits.
+
+##Customizing
+In skynetTest/myCompany there's a file with the input and output structs for your API service.  Add your input fields and output fields to these.  Don't forget to change the initiator code to accept these fields, too.  Now modify the skynetTest/service/service.go file to do something real - retrieve data from your systems - and you've built an API service in Go.

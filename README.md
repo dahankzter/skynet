@@ -1,15 +1,11 @@
 ![logo](/bketelsen/skynet/raw/master/documentation/SkyNetLogo.png)
 
-##Mailing List
-http://groups.google.com/group/skynet-dev
 
 ##Introduction
-Skynet is a virtually–unkillable system for building massively distributed apps in Go.
+Skynet is a highly available system for building distributed apps in Go.
 
 ##Tell me more:
-Servers die, stop communicating, catch on fire, get killed by robots from the future, and should not be trusted. If your site won’t work with a Chaos Monkey, it isn’t safe. Enter Skynet. Each Skynet module is self–contained, self–aware, and self–replicating – if you have one server with an authentication module on it, and that server melts, Skynet will notice and stop using it.  You also have the option of creating watchers/spawners that ensure that there are enough of each particular process running. 
-
-Skynet probably won’t die unless your data center gets hit by a comet.  We recommend at least 2 data centers in that scenario.
+Sknet is a framework for building distributed services in Go. Skynet is built on the premise that services should be composed of one or more building blocks that can be chained together to build a compsite application.
 
 SkyNet is built on the premise that there will be at least three distinct process types:
 
@@ -18,54 +14,15 @@ SkyNet is built on the premise that there will be at least three distinct proces
 1. Services -Services are where the work gets done.  These are the processes that service the requests, process the API calls, get the external data, log the requests, authenticate the users, etc.  You chain services together in a Route to build an application.
 1. (Optional) Watchers -Watchers are tasks that run and know about the system, but aren't responding to individual requests.  An example of a watcher would be a process that watches the other processes in the system and reports on statistics or availability.  The Reaper is a specialized watcher that checks each Skynet cluster member, culling dead processes from the configuration.
 
-##Shut up and tell me what to do!
-Install [Go](http://golang.org) and MongoDB
+##How do I get some of this sweet Skynet action?
+Install [Go](http://golang.org) and [MongoDB](http://www.mongodb.org)
 
 	 goinstall github.com/bketelsen/skynet/skygen
 	 goinstall github.com/bketelsen/skynet/skylib
 	 goinstall github.com/bketelsen/skynet/reaper
 	 skygen -packageName=myCompany -serviceName=GetWidgets -targetFullPath="/Users/bketelsen/skynetTest/"
 
-The skygen command generates a source tree with a running sample application.  After running skygen, cd into your target directory and build each service.  We use the awesome [go-gb](https://github.com/skelterjohn/go-gb).  Using gb, you simply issue the command "gb" from the root directory.  Each service will be compiled, and the executable will be named the same as its containing folder.  If you're following along, you'll have:
 
-	skynetTest/
-	skynetTest/bin/
-	skynetTest/bin/router
-	skynetTest/bin/service
-	skynetTest/bin/watcher
-	skynetTest/bin/reaper
-	skynetTest/bin/initiator
-			
-Before you can run skynet you'll need to have mongodb process running.  
-Now start each service, on a different port:
-
-	 bin/service -name=getwidgets -port=9200 &
-	 bin/initiator -name=webinitiator -port=9300 &
-	 bin/router -name=router -port=9100 &
- 	 bin/reaper -name=reaper -port=9000 &
-
-If you don't specify a -logFileName parameter, they'll all default to using the same log file.  Now open a web browser and aim it at http://127.0.0.1:9300 
-Enter something in the form and hit enter.  You should get a "Hello World" response.  
-
-To really spice up your life, start up multiples of each process:
-
-	 bin/service -name=getwidgets2 -port=9201 &
-	 bin/initiator -name=webinitiator2 -port=9301 &
-	 bin/router -name=router2 -port=9101 &
-	 bin/reaper -name=reaper2 -port=9001 &
-	
-Connect to http://127.0.0.1:9300 or :9301 and see the same thing.  Kill the first router you started and submit a request... the second will handle the call.  Kill all of the services, skynet will return a pretty error message letting you know that there weren't any services available to handle the request.  
-
-Now, go to http://127.0.0.1:9100/debug/vars (if you haven't killed that router process... if you have find any other process and substitute the port).  Skynet automatically exports statistical variables in JSON format:
-
-	{
-	...
-	"RouteService.RouteGetACHDataRequest-goroutines": 29,
-	"cmdline": ["bin/routers","-name=router","-port=9100"],
-	"RouteService.RouteGetACHDataRequest-processed": 3030,
-	"RouteService.RouteGetACHDataRequest-errors": 2
-	}
-	
 ##Do you have pretty diagrams?
 
 Yes.
@@ -80,16 +37,8 @@ advertises that service's availability to the rest of the members of the skynet 
 
 A typical transaction will come to an Initiator (via http for example) and be sent to a router that is providing the appropriate service to route that type of requests.  The Router checks its routes and calls the services listed in its route configuration for that Route type.  Routes also define whether a service can be called Asynchronously (fire and forget) or whether the router must wait for a response.  For each service listed in the route the Router calls the service passing in the request and response objects.  When all services are run, the router returns a response to the Initiator who is responsible for presenting the data to the remote client appropriately.  In our HTTP example, this could mean translating to data using an HTML template, or an XML/JSON template.
 
-SkyNet MongoDB to store configuration data about the available services .  Configuration changes are pushed to Mongo, causing connected clients to immediately become aware of changed configurations.  
+SkyNet uses MongoDB to store configuration data about the available services .  Configuration changes are pushed to Mongo, causing connected clients to immediately become aware of changed configurations.  
 
-##Running Processes
-
-* Sending SIGUSR1 to a running process raises the log level one notch.
-* Sending SIGUSR2 to a running process lowers the log level one notch.
-* Sending SIGINT to a running process gracefully exits.
-
-##Customizing
-In skynetTest/myCompany there's a file with the input and output structs for your API service.  Add your input fields and output fields to these.  Don't forget to change the initiator code to accept these fields, too.  Now modify the skynetTest/service/service.go file to do something real - retrieve data from your systems - and you've built an API service in Go.
 
 ##Documentation
 There are more (still kind of sparse) documents in the documentation folder.
