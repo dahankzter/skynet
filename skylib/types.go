@@ -47,9 +47,10 @@ type Route struct {
 }
 
 // The struct that is stored in the Route
-// Async delineates whether it's ok to call this and not
-// care about the response.
-// OkToRetry delineates whether it's ok to call this service
+// Async : is it ok to call this and not care about the response?
+// Operation : method of RPC service to call
+// OkToRetry : is it ok to retry this if it fails?
+// ErrOnFail : If this service fails, should the whole app error?
 // more than once.
 type RpcCall struct {
 	Service   string
