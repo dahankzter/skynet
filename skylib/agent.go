@@ -65,7 +65,6 @@ func gracefulShutdown() {
 // Method to register the heartbeat of each skynet
 // node with the healthcheck exporter.
 // We call `go Serve()` here because we never want to `Wait()` on the Heartbeat.
-// TODO: Should Heartbeat be on a different port?
 func RegisterAgentHeartbeat() {
 	sig := &CommonService{}
 	server := NewRpcService(sig)
@@ -120,7 +119,6 @@ func NewAgent() *Agent {
 	name := *Name
 	initLogging()
 	initDefaultExpVars(name)
-
 	ConnectStore()
 	LoadRegistry()
 	if x := recover(); x != nil {

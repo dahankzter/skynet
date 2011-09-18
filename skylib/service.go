@@ -33,8 +33,12 @@ func (hc *Service) Ping(hr *HeartbeatRequest, resp *HeartbeatResponse) (err os.E
 func (hc *Service) PingAdvanced(hr *HealthCheckRequest, resp *HealthCheckResponse) (err os.Error) {
 
 	resp.Timestamp = time.Seconds()
-	resp.Load = 0.1 //todo
+	resp.Load = getSystemLoad()
 	return nil
+}
+
+func getSystemLoad() float64 {
+	return 0.1 //todo
 }
 
 func (r *Service) Equal(that *Service) bool {

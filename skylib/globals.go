@@ -15,11 +15,11 @@ import (
 	"expvar"
 )
 
-var Port *int = flag.Int("port", 0, "tcp port to listen")
+var Port *int = flag.Int("port", 0, "tcp port to listen - leave blank to auto-assign open port")
 var Name *string = flag.String("name", os.Args[0], "name of this server")
 var BindIP *string = flag.String("bindaddress", "127.0.0.1", "address to bind")
-var LogFileName *string = flag.String("logFileName", "myservice."+path.Base(os.Args[0])+".log", "name of logfile")
-var LogLevel *int = flag.Int("logLevel", 1, "log level (1-5)")
+var LogFileName *string = flag.String("logFileName", "skynet."+path.Base(os.Args[0])+".log", "name of logfile")
+var LogLevel *int = flag.Int("logLevel", 1, "log level 0 (errors only) to 3 (debug)")
 var Protocol *string = flag.String("protocol", "http+gob", "RPC message transport protocol (default is http+gob; try json")
 var Requests *expvar.Int
 var Errors *expvar.Int

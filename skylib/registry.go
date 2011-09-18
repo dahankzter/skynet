@@ -26,6 +26,7 @@ func GetAllServiceProviders(classname string) (serverList []*RpcService) {
 
 	for _, v := range NOS.Services {
 		if v != nil && v.Provides == classname {
+			LogDebug("Found ", classname)
 			serverList = append(serverList, v)
 		}
 	}

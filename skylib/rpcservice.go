@@ -35,14 +35,11 @@ func (r *RpcService) parseError(err string) {
 	panic(&Error{err, r.Provides})
 }
 
-// At the moment, this can start more than one Server on the same
-// port, which could be a problem.
 func (self *RpcService) Serve(done chan bool) {
 
 	switch self.Protocol {
 	default:
-		rpc.HandleHTTP() // Seems safe to call multiple times, but must
-		// that precede net.Listen()?
+		rpc.HandleHTTP()
 		LogDebug("Starting http server")
 		http.Serve(self.l, nil)
 	case "json":
@@ -100,6 +97,8 @@ func NewRpcService(sig interface{}) *RpcService {
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
+
+	//update variables with our auto assigned port
 	r.Port = t.Port
 	*Port = t.Port
 
