@@ -19,10 +19,10 @@ import (
 )
 
 func monitorServices() {
-	println("Fear the reaper...")
+	fmt.Println("Fear the reaper...")
 
 	for {
-		skylib.ConnectStore()
+
 		skylib.LoadRegistry()
 		for _, v := range skylib.NOS.Services {
 			var newClient *rpc.Client
@@ -58,6 +58,9 @@ func main() {
 
 	// Pull in command line options or defaults if none given
 	flag.Parse()
+
+	// normally this happens in Agent, but we're not an agent, so do it ourselves.
+	skylib.ConnectStore()
 
 	monitorServices()
 }
