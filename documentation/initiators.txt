@@ -10,4 +10,5 @@ Telnet - TCP listener takes commands from telnet session, returns textual respon
 REST - accept REST requests and translate them to skynet requests
 SOAP Proxy - create a soap proxy for skynet requests
 Comet
+Websockets
 

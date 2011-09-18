@@ -18,4 +18,4 @@ Example:
 Services are executed in order.  An error at any stage of the route sets adds an entry in the Error array of the response object.
 	
 
-If you will NEVER need to call more than one service, you can wire the Initiator directly to the Service.  This isn't recommended, simply because the hot-pluggable routes allow you the freedom to insert any other process as needed in the future.  Today you may not need logging, but when your service becomes the next new internet hotness, you will want both logging and API Access throttling.  Routes allow you the flexibility to do that without recompiling your service.
+If you will NEVER need to call more than one service, you can wire the Initiator directly to the Service.  This isn't recommended, simply because the hot-pluggable routes allow you the freedom to insert any other process as needed in the future.  Today you may not need logging, but when your service becomes the next new internet hotness, you will want both logging and API Access throttling.  Routes allow you the flexibility to do that on the fly.
