@@ -19,6 +19,7 @@ func (*SubscriptionService) ProcessSubscription(m myCompany.SubscriptionRequest,
 
 	response.Success = true
 	skylib.LogDebug(*response)
+	skylib.Requests.Add(1)
 	return
 }
 

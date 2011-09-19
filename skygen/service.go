@@ -28,6 +28,7 @@ func (*<%ServiceName%>Service) Process<%ServiceName%>(m <%PackageName%>.<%Servic
 
 	response.Success = true
 	skylib.LogDebug(*response)
+	skylib.Requests.Add(1)
 	return
 }
 
