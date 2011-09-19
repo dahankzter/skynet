@@ -5,17 +5,18 @@ import (
 	"os"
 	"flag"
 	"time"
-	"message"
 	"container/vector"
+	"myCompany"
 )
+	
 
 var route *skylib.Route
 
-type StompRouter struct {
+type SubscriptionRouter struct {
 
 }
 
-func callRpcService(service string, operation string, async bool, failOnErr bool, cr skynetstomp.SkynetStompRequest, rep *skynetstomp.SkynetStompResponse) (err os.Error) {
+func callRpcService(service string, operation string, async bool, failOnErr bool, cr myCompany.SubscriptionRequest, rep *myCompany.SubscriptionResponse) (err os.Error) {
 	defer skylib.CheckError(&err)
 
 	rpcClient, err := skylib.GetRandomClientByService(service)
@@ -48,8 +49,9 @@ func callRpcService(service string, operation string, async bool, failOnErr bool
 	return nil
 }
 
+
 // Service operation for RPC.
-func (*StompRouter) RouteXmlResponse(m skynetstomp.SkynetStompRequest, response *skynetstomp.SkynetStompResponse) (err os.Error) {
+func (*SubscriptionRouter) RouteSubscriptionRequest(m myCompany.SubscriptionRequest, response *myCompany.SubscriptionResponse) (err os.Error) {
 	defer skylib.CheckError(&err)
 	skylib.LogInfo(route)
 	for i := 0; i < route.RouteList.Len(); i++ {
@@ -68,11 +70,26 @@ func (*StompRouter) RouteXmlResponse(m skynetstomp.SkynetStompRequest, response 
 
 }
 
+
 func main() {
 	flag.Parse()
 	route = CreateInitialRoute()
-	sig := &StompRouter{}
+	sig := &SubscriptionRouter{}
 	skylib.NewAgent().Register(sig).Start().Wait()
+}
+
+
+// checkError is a deferred function to turn a panic with type *Error into a plain error return.
+// Other panics are unexpected and so are re-enabled.
+func checkError(error *os.Error) {
+	if v := recover(); v != nil {
+		if e, ok := v.(*skylib.Error); ok {
+			*error = e
+		} else {
+			// runtime errors should crash
+			panic(v)
+		}
+	}
 }
 
 // To change a route, make a new router and kill
@@ -81,13 +98,13 @@ func CreateInitialRoute() (r *skylib.Route) {
 
 	r = new(skylib.Route)
 	// Create a basic Route object.
-	r.Name = "StompRouter" // I think this doesn't matter any more
+	r.Name = "SubscriptionRouter" // I think this doesn't matter any more
 	r.LastUpdated = time.Seconds()
 	r.Revision = 1
 	r.RouteList = new(vector.Vector)
 
 	// Define the chain of services.
-	rpcScore := &skylib.RpcCall{Service: "StompService", Operation: ".ProcessXmlResponse", Async: false, OkToRetry: false, ErrOnFail: true}
+	rpcScore := &skylib.RpcCall{Service: "SubscriptionService", Operation: ".ProcessSubscription", Async: false, OkToRetry: false, ErrOnFail: true}
 
 	// Just one, for now.
 	r.RouteList.Push(rpcScore)
