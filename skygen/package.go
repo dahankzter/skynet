@@ -10,11 +10,12 @@ package main
 const packageTemplate = `package <%PackageName%>
 
 type <%ServiceName%>Request struct {
-	YourInputValue string
+	Name string
+	EmailAddress string
 }
 
 type <%ServiceName%>Response struct {
-	YourOutputValue string
+	Success bool
 	Errors               []string
 }
 `

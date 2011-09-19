@@ -10,71 +10,63 @@ package main
 const routerTemplate = `package main
 
 import (
-	"rpc"
-	"os"
-	"net"
-	"log"
-	"http"
-	"flag"
 	"github.com/bketelsen/skynet/skylib"
+	"os"
+	"flag"
 	"time"
 	"container/vector"
-	"json"
-	"fmt"
 	"<%PackageName%>"
 )
-
+	
 
 var route *skylib.Route
 
-const sName = "RouteService.Route<%ServiceName%>Request"
+type <%ServiceName%>Router struct {
 
-//Exporter struct for RPC
-type RouteService struct {
-	Name string
 }
 
+func callRpcService(service string, operation string, async bool, failOnErr bool, cr <%PackageName%>.<%ServiceName%>Request, rep *<%PackageName%>.<%ServiceName%>Response) (err os.Error) {
+	defer skylib.CheckError(&err)
 
-func callRpcService(name string, async bool, failOnErr bool, cr *<%PackageName%>.<%ServiceName%>Request, rep *<%PackageName%>.<%ServiceName%>Response) (err os.Error) {
-	defer checkError(&err)
-
-	rpcClient, err := skylib.GetRandomClientByProvides(name)
+	rpcClient, err := skylib.GetRandomClientByService(service)
 	if err != nil {
-		log.Println("No service provides", name)
+		skylib.LogError("No service provides", service)
 		if failOnErr {
-			return skylib.NewError(skylib.NO_CLIENT_PROVIDES_SERVICE, sName)
+			return skylib.NewError(skylib.NO_CLIENT_PROVIDES_SERVICE, service)
 		} else {
 			return nil
 		}
 	}
+	name := service + operation
 	if async {
 		go rpcClient.Call(name, cr, rep)
-		go skylib.LogInfo("Called service async", name)
+		skylib.LogInfo("Called service async", name)
 		return nil
 	}
-	log.Println("Calling : " + name)
+	skylib.LogInfo("Calling : " + name)
 	err = rpcClient.Call(name, cr, rep)
 	if err != nil {
-		skylib.LogError("RPC connection failed, retrying", err)
+		skylib.LogError("failed connection, retrying", err)
 		// get another one and try again!
-		rpcClient, err := skylib.GetRandomClientByProvides(name)
+		rpcClient, err := skylib.GetRandomClientByService(service)
 		err = rpcClient.Call(name, cr, rep)
 		if err != nil {
-			return skylib.NewError(err.String(), sName)
+			return skylib.NewError(err.String(), name)
 		}
 	}
-	go skylib.LogInfo("Called service sync", name)
+	skylib.LogInfo("Called service operation sync", name)
 	return nil
 }
 
 
-func (rs *RouteService) Route<%ServiceName%>Request(cr *<%PackageName%>.<%ServiceName%>Request, rep *<%PackageName%>.<%ServiceName%>Response) (err os.Error) {
-	defer checkError(&err)
-	log.Println(route)
+// Service operation for RPC.
+func (*<%ServiceName%>Router) Route<%ServiceName%>Request(m <%PackageName%>.<%ServiceName%>Request, response *<%PackageName%>.<%ServiceName%>Response) (err os.Error) {
+	defer skylib.CheckError(&err)
+	skylib.LogInfo(route)
 	for i := 0; i < route.RouteList.Len(); i++ {
-		rpcCall := route.RouteList.At(i).(map[string]interface{})
+		rpcCall := route.RouteList.At(i).(*skylib.RpcCall)
 
-		err := callRpcService(rpcCall["Service"].(string), rpcCall["Async"].(bool), rpcCall["ErrOnFail"].(bool), cr, rep)
+		err := callRpcService(rpcCall.Service, rpcCall.Operation, rpcCall.Async, rpcCall.ErrOnFail, m, response)
 		if err != nil {
 			skylib.Errors.Add(1)
 			return err
@@ -88,45 +80,13 @@ func (rs *RouteService) Route<%ServiceName%>Request(cr *<%PackageName%>.<%Servic
 }
 
 
-// The Router application registers RPC listeners to accept from the initiators
-// then registers RPC clients to each of the external services it may call.
 func main() {
-
-	var err os.Error
-
-	// Pull in command line options or defaults if none given
 	flag.Parse()
-
-	f, err := os.OpenFile(*skylib.LogFileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
-	if err == nil {
-		defer f.Close()
-		log.SetOutput(f)
-	}
-
-	skylib.Setup(sName)
-
-	CreateInitialRoute()
-
-	route, err = skylib.GetRoute(sName)
-	if err!=nil {
-		log.Panic("Unable to retrieve route.")
-	}
-
-	r := &RouteService{Name: *skylib.Name}
-
-	rpc.Register(r)
-	rpc.HandleHTTP()
-
-	portString := fmt.Sprintf("%s:%d", *skylib.BindIP, *skylib.Port)
-
-	l, e := net.Listen("tcp", portString)
-	if e != nil {
-		log.Fatal("listen error:", e)
-	}
-	log.Println("Starting server")
-	http.Serve(l, nil)
-
+	route = CreateInitialRoute()
+	sig := &SubscriptionRouter{}
+	skylib.NewAgent().Register(sig).Start().Wait()
 }
+
 
 // checkError is a deferred function to turn a panic with type *Error into a plain error return.
 // Other panics are unexpected and so are re-enabled.
@@ -140,35 +100,23 @@ func checkError(error *os.Error) {
 		}
 	}
 }
-// Today this function creates a route in Doozer for the
-// RouteService.RouteCreditRequest method - which is CLARITY SPECIFIC
-// and adds it too Doozer
-func CreateInitialRoute()  {
 
-	r := &skylib.Route{}
-	r.Name = sName
+// To change a route, make a new router and kill
+// the old ones.
+func CreateInitialRoute() (r *skylib.Route) {
+
+	r = new(skylib.Route)
+	// Create a basic Route object.
+	r.Name = "<%ServiceName%>Router" // I think this doesn't matter any more
 	r.LastUpdated = time.Seconds()
 	r.Revision = 1
+	r.RouteList = new(vector.Vector)
 
-	rpcScore := &skylib.RpcCall{Service: "<%ServiceName%>Service.<%ServiceName%>", Async: false, OkToRetry: false, ErrOnFail: true}
+	// Define the chain of services.
+	rpcScore := &skylib.RpcCall{Service: "<%ServiceName%>Service", Operation: ".Process<%ServiceName%>", Async: false, OkToRetry: false, ErrOnFail: true}
 
-	rl := new(vector.Vector)
-
-	r.RouteList = rl
-	rl.Push(rpcScore)
-
-	b, err := json.Marshal(r)
-	if err != nil {
-		log.Panic(err.String())
-	}
-	rev, err := skylib.DC.Rev()
-	if err != nil {
-		log.Panic(err.String())
-	}
-	_, err = skylib.DC.Set("/routes/RouteService.Route<%ServiceName%>Request", rev, b)
-	if err != nil {
-		log.Panic(err.String())
-	}
+	// Just one, for now.
+	r.RouteList.Push(rpcScore)
 	return
 }
 `

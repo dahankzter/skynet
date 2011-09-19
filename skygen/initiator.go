@@ -9,103 +9,68 @@ package main
 
 const initiatorTemplate = `package main
 
+import (
+	"net"
+	"fmt"
+	"<%PackageName%>"
+	"os"
+	"http"
+	"bufio"
+	"strings"
+	"flag"
+	"github.com/bketelsen/skynet/skylib"
+)
 
-import "github.com/bketelsen/skynet/skylib"
-import "<%PackageName%>"
-import "log"
-import "os"
-import "http"
-import "template"
-import "flag"
-import "fmt"
-import "rpc"
-
-const sName = "Initiator.Web"
-
-const homeTemplate = ` + "`<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'><html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'><head></head><body id='body'><form action='/new' method='POST'><div>Your Input Value<input type='text' name='YourInputValue' value=''></input></div>	</form></body></html>`" + `
-const responseTemplate = ` + "`<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'><html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'><head></head><body id='body'>{.repeated section resp.Errors} There were errors:<br/>{@}<br/>{.end}<div>Your Output Value: {resp.YourOutputValue}</div>	</body></html>	`" + `
-
-
-// Call the RPC service on the router to process the <%ServiceName%>Request.
-func submit<%ServiceName%>Request(cr *<%PackageName%>.<%ServiceName%>Request) (*<%PackageName%>.<%ServiceName%>Response, os.Error) {
-	var <%ServiceName%>Response *<%PackageName%>.<%ServiceName%>Response
-
-	client, err := skylib.GetRandomClientByProvides("RouteService.Route<%ServiceName%>Request")
+func startHttpServer(addr string) (err os.Error) {
+	httpPort, err := net.Listen("tcp", addr)
 	if err != nil {
-		if <%ServiceName%>Response == nil {
-			<%ServiceName%>Response = &<%PackageName%>.<%ServiceName%>Response{}
-		}
-		<%ServiceName%>Response.Errors = append(<%ServiceName%>Response.Errors, err.String())
-		return <%ServiceName%>Response, err
+		return
 	}
-	err = client.Call("RouteService.Route<%ServiceName%>Request", cr, &<%ServiceName%>Response)
-	if err != nil {
-		if <%ServiceName%>Response == nil {
-			<%ServiceName%>Response = &<%PackageName%>.<%ServiceName%>Response{}
-
-		}
-		<%ServiceName%>Response.Errors = append(<%ServiceName%>Response.Errors, err.String())
-	}
-
-	return <%ServiceName%>Response, nil
+	go http.Serve(httpPort, nil)
+	return
 }
 
-// Handler function to accept the submitted form post with the SSN
-func submitHandler(w http.ResponseWriter, r *http.Request) {
+func processMessage(name, email string) {
+	service := "<%ServiceName%>Router"
+	client, _ := skylib.GetRandomClientByService(service)
 
-	log.Println("Submit <%ServiceName%> Request")
-	cr := &<%PackageName%>.<%ServiceName%>Request{YourInputValue: r.FormValue("YourInputValue")}
+	response := <%PackageName%>.<%ServiceName%>Response{}
+	req := <%PackageName%>.<%ServiceName%>Request{}
 
-	resp, err := submit<%ServiceName%>Request(cr)
-	if err != nil {
-		skylib.LogError(err.String())
-	}
-	
-	go skylib.LogDebug(resp)
+	req.Name = name
+	req.EmailAddress = email
 
-	respTmpl.Execute(w, map[string]interface{}{
-		"resp": resp,
-	})
+	client.Call(service+".Route<%ServiceName%>Request", req, &response)
+	skylib.Requests.Add(1)
+	skylib.LogError("User ", req.Name, " subscribed? ", response.Success)
 }
-
-
-// Handler function to display the social form
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	homeTmpl.Execute(w, nil)
-
-}
-
-var homeTmpl *template.Template
-var respTmpl *template.Template
 
 func main() {
 
-	var err os.Error
-
-	// Pull in command line options or defaults if none given
 	flag.Parse()
+	skylib.NewAgent().Start()
 
-	f, err := os.OpenFile(*skylib.LogFileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
-	if err == nil {
-		defer f.Close()
-		log.SetOutput(f)
+	//start management web server
+	e := startHttpServer(":8080")
+	if e != nil {
+		fmt.Println("unable to start http server")
 	}
 
-	skylib.Setup(sName)
-
-	homeTmpl = template.MustParse(homeTemplate, nil)
-	respTmpl = template.MustParse(responseTemplate, nil)
-
-	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/new", submitHandler)
-
-	rpc.HandleHTTP()
-
-	portString := fmt.Sprintf("%s:%d", *skylib.BindIP, *skylib.Port)
-
-	err = http.ListenAndServe(portString, nil)
+	f, err := os.Open("subscriptions.csv")
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err.String())
+		panic("Couldn't Open Data File: " + err.String())
 	}
+	defer f.Close()
+
+	br := bufio.NewReader(f)
+	for {
+		line, _, err := br.ReadLine()
+		if err != nil {
+			break
+		}
+		fields := strings.Split(string(line), ",")
+		processMessage(fields[0], fields[1])
+	}
+
 }
 `
