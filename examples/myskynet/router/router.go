@@ -8,7 +8,6 @@ import (
 	"container/vector"
 	"myCompany"
 )
-	
 
 var route *skylib.Route
 
@@ -28,6 +27,7 @@ func callRpcService(service string, operation string, async bool, failOnErr bool
 			return nil
 		}
 	}
+
 	name := service + operation
 	if async {
 		go rpcClient.Call(name, cr, rep)
@@ -49,7 +49,6 @@ func callRpcService(service string, operation string, async bool, failOnErr bool
 	return nil
 }
 
-
 // Service operation for RPC.
 func (*SubscriptionRouter) RouteSubscriptionRequest(m myCompany.SubscriptionRequest, response *myCompany.SubscriptionResponse) (err os.Error) {
 	defer skylib.CheckError(&err)
@@ -70,14 +69,12 @@ func (*SubscriptionRouter) RouteSubscriptionRequest(m myCompany.SubscriptionRequ
 
 }
 
-
 func main() {
 	flag.Parse()
 	route = CreateInitialRoute()
 	sig := &SubscriptionRouter{}
 	skylib.NewAgent().Register(sig).Start().Wait()
 }
-
 
 // checkError is a deferred function to turn a panic with type *Error into a plain error return.
 // Other panics are unexpected and so are re-enabled.
@@ -104,9 +101,15 @@ func CreateInitialRoute() (r *skylib.Route) {
 	r.RouteList = new(vector.Vector)
 
 	// Define the chain of services.
-	rpcScore := &skylib.RpcCall{Service: "SubscriptionService", Operation: ".ProcessSubscription", Async: false, OkToRetry: false, ErrOnFail: true}
+	rpcSubscribe := &skylib.RpcCall{Service: "SubscriptionService", Operation: ".ProcessSubscription", Async: false, OkToRetry: false, ErrOnFail: true}
 
 	// Just one, for now.
-	r.RouteList.Push(rpcScore)
+	r.RouteList.Push(rpcSubscribe)
+	/*
+		rpcLog := &skylib.RpcCall{Service: "SubscriptionService", Operation: ".LogSubscription", Async: true, OkToRetry: true, ErrOnFail: false}
+
+		// Just one, for now.
+		r.RouteList.Push(rpcLog)
+	*/
 	return
 }

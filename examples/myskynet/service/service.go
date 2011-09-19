@@ -11,10 +11,17 @@ type SubscriptionService struct {
 
 }
 
+func (*SubscriptionService) LogSubscription(m myCompany.SubscriptionRequest, response *myCompany.SubscriptionResponse) (err os.Error) {
+
+	//Log the message here
+
+	skylib.LogError(m)
+	skylib.Requests.Add(1)
+	return
+}
+
 func (*SubscriptionService) ProcessSubscription(m myCompany.SubscriptionRequest, response *myCompany.SubscriptionResponse) (err os.Error) {
 
-	//Process the message here
-	skylib.LogDebug(m.EmailAddress)
 	// Add this user to the subscription system HERE
 
 	response.Success = true
