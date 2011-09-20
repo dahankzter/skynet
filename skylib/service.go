@@ -22,7 +22,7 @@ type Service struct {
 
 // Exported RPC method for the health check
 func (hc *Service) Ping(hr *HeartbeatRequest, resp *HeartbeatResponse) (err os.Error) {
-
+	LogDebug("Responding to Ping.")
 	resp.Timestamp = time.Seconds()
 	resp.Ok = true
 
@@ -31,6 +31,7 @@ func (hc *Service) Ping(hr *HeartbeatRequest, resp *HeartbeatResponse) (err os.E
 
 // Exported RPC method for the advanced health check
 func (hc *Service) PingAdvanced(hr *HealthCheckRequest, resp *HealthCheckResponse) (err os.Error) {
+	LogDebug("Responding to Advanced Ping.")
 
 	resp.Timestamp = time.Seconds()
 	resp.Load = getSystemLoad()

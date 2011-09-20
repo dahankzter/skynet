@@ -19,17 +19,20 @@ import (
 func initLogging() {
 	f, err := os.OpenFile(*LogFileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err == nil {
-		//defer f.Close()
 		log.SetOutput(f)
 	}
 }
 
+// In your services, increment Requests, Errors, and Goroutines
+// when you want to see the counts from an external poller
 func initDefaultExpVars(name string) {
 	Requests = expvar.NewInt(name + "-processed")
 	Errors = expvar.NewInt(name + "-errors")
 	Goroutines = expvar.NewInt(name + "-goroutines")
 }
 
+// USR1 raises the log level - more output
+// USR2 lowers the log level - less output
 func watchSignals() {
 
 	for {

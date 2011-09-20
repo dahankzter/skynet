@@ -31,6 +31,7 @@ func monitorServices() {
 			hostString := fmt.Sprintf("%s:%d", v.IPAddress, v.Port)
 			protocol := strings.ToLower(v.Protocol) // to be safe
 
+			skylib.LogDebug("Testing : ", hostString)
 			switch protocol {
 			default:
 				newClient, err = rpc.DialHTTP("tcp", hostString)
@@ -44,6 +45,7 @@ func monitorServices() {
 				v.RemoveFromRegistry()
 				break
 			}
+
 			newClient.Close()
 
 		}

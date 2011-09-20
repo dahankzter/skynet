@@ -18,7 +18,7 @@ type CommonService struct {
 
 // Exported RPC method for the health check
 func (hc *CommonService) Ping(hr *HeartbeatRequest, resp *HeartbeatResponse) (err os.Error) {
-
+	LogDebug("Responding to CommonService.Ping")
 	resp.Timestamp = time.Seconds()
 
 	return nil
@@ -26,7 +26,7 @@ func (hc *CommonService) Ping(hr *HeartbeatRequest, resp *HeartbeatResponse) (er
 
 // Exported RPC method for the advanced health check
 func (hc *CommonService) PingAdvanced(hr *HealthCheckRequest, resp *HealthCheckResponse) (err os.Error) {
-
+	LogDebug("Responding to CommonService.PingAdvanced")
 	resp.Timestamp = time.Seconds()
 	resp.Load = 0.1 //todo
 	return nil

@@ -96,17 +96,6 @@ func (r *RpcService) RemoveFromRegistry() {
 
 }
 
-func RemoveService(i int) {
-
-	s := NOS.Services[i]
-	c := MC.DB("skynet").C("config")
-
-	err := c.Remove(bson.M{"ipaddress": s.IPAddress, "provides": s.Provides, "port": s.Port, "protocol": s.Protocol})
-	if err != nil {
-		log.Panic(err)
-	}
-}
-
 // Watch for remote changes to the config file.  When new changes occur
 // reload our copy of the config file.
 // Meant to be run as a goroutine continuously.
