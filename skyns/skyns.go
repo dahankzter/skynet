@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/bketelsen/GoServe/serve"
 	"os"
-	"fmt"
+	"time"
 )
 
 type Service struct{
@@ -12,22 +12,33 @@ type Service struct{
 	Timestamp	int64
 }
 
-var registry map[string]Service
+var registry map[string]*Service
 
 func cmdPing(*serve.Command) (string, os.Error) {
     return "PONG", nil
 }
 
-func cmdRegister(*serve.Command) (string, os.Error) {
+func cmdRegister(cmd *serve.Command) (string, os.Error) {
+	service := &Service{Name: cmd.Args[0], Address: cmd.Args[1], Timestamp: time.Seconds()}
+	registry[service.Name] = service
+    return "REGISTERED " + cmd.Args[0],  nil
+}
 
-    return "REGISTERED", nil
+func cmdGet(cmd *serve.Command) (string, os.Error) {
+	 service := registry[cmd.Args[0]] 
+    return "FOUND " + service.Name + " " + service.Address,  nil
 }
 
 
+
 func main(){
+	
+	registry = make(map[string]*Service)
+	
 	var commands = map[string]serve.CmdDescriptor{
 	    "PING": {0, cmdPing},
-		"REGISTER":{3, cmdRegister},
+		"REGISTER":{2, cmdRegister},
+		"GET":{1,cmdGet},
 	}
 	
 	var cfg = serve.NewConfig("Test server", commands, true)
