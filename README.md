@@ -1,4 +1,7 @@
+Please NOTE, Skynet was developed for Go release 60 (fall-2011) and has not been updated to current Go standards.   Active development on Skynet is on hold for a month or two (as of April/2012)
+
 ![logo](/bketelsen/skynet/raw/master/documentation/SkyNetLogo.png)
+
 
 
 ##Introduction
