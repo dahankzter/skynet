@@ -22,6 +22,7 @@ type Config struct {
 
 	AdminIPAddress        string
 	AdminPort             int
-	ConfigServers         []string
-	ConfigServerDiscovery bool
+
+	DoozerUri             string
+	DoozerBootUri         string
 }

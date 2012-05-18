@@ -33,8 +33,8 @@ type Service struct {
 	Name                  string
 	Region                string
 	Version               string
-	ConfigServers         []string          `json:"-"`
-	ConfigServerDiscovery bool              `json:"-"`
+	DoozerUri             string            `json:"-"`
+	DoozerBootUri         string            `json:"-"`
 	DoozerConn            *DoozerConnection `json:"-"`
 	Registered            bool              `json:"-"`
 	doneChan              chan bool         `json:"-"`
@@ -132,8 +132,8 @@ func CreateService(s ServiceInterface, c *Config) *Service {
 		},
 		Delegate:              s,
 		Log:                   c.Log,
-		ConfigServers:         c.ConfigServers,
-		ConfigServerDiscovery: c.ConfigServerDiscovery,
+    DoozerUri:   c.DoozerUri,
+    DoozerBootUri: c.DoozerBootUri,
 	}
 
 	return service
@@ -164,10 +164,8 @@ func initializeConfig(c *Config) {
 		c.Port = 9000
 	}
 
-	if c.ConfigServers == nil || len(c.ConfigServers) == 0 {
-		dzServers := make([]string, 0)
-		dzServers = append(dzServers, "127.0.0.1:8046")
-		c.ConfigServers = dzServers
+	if c.DoozerUri == "" && c.DoozerBootUri == "" {
+    c.DoozerUri = "127.0.0.1:8046"
 	}
 }
 
@@ -209,8 +207,8 @@ func watchSignals(c chan os.Signal, s *Service) {
 func (s *Service) doozer() *DoozerConnection {
 	if s.DoozerConn == nil {
 		s.DoozerConn = &DoozerConnection{
-			Servers:  s.ConfigServers,
-			Discover: s.ConfigServerDiscovery,
+      Uri:      s.DoozerUri,
+      BootUri:  s.DoozerBootUri,
 			Log:      s.Log,
 		}
 

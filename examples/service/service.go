@@ -9,7 +9,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/bketelsen/skynet/skylib"
 	"log"
 	"time"
@@ -21,19 +20,9 @@ var (
 	Region      *string = flag.String("region", "unknown", "region service is located in")
 	LogFile     *string = flag.String("logfile", "myservice.log", "name of logfile")
 	LogLevel    *int    = flag.Int("loglevel", 1, "log level (1-5)")
-	DoozerAddrs         = DoozerConfig{}
+  DoozerUri   *string = flag.String("doozer", "", "doozer address")
+	DoozerBootUri  *string = flag.String("doozerboot", "", "doozer boot uri")
 )
-
-type DoozerConfig []string
-
-func (dc *DoozerConfig) Set(s string) error {
-	*dc = append(*dc, s)
-	return nil
-}
-
-func (dc *DoozerConfig) String() string {
-	return fmt.Sprint(*dc)
-}
 
 type GetUserDataService struct{}
 
@@ -85,16 +74,9 @@ func (ls *GetUserDataService) GetUserData(cr *GetUserDataRequest, lr *GetUserDat
 
 func main() {
 	// Pull in command line options or defaults if none given
-	flag.Var(&DoozerAddrs, "doozer", "addr:port of doozer server") // trick to supply multiple -doozer flags
 	flag.Parse()
 
 	getDataService := NewGetUserDataService()
-
-	dzServers := make([]string, 0)
-	for _, dz := range DoozerAddrs {
-		log.Println(dz)
-		dzServers = append(dzServers, dz)
-	}
 
 	service := skylib.CreateService(getDataService, &skylib.Config{
 		Name:                  "GetUserDataService",
@@ -102,8 +84,8 @@ func main() {
 		Version:               "1",
 		IPAddress:             *BindAddr,
 		Port:                  *BindPort,
-		ConfigServers:         dzServers,
-		ConfigServerDiscovery: true,
+    DoozerUri:             *DoozerUri,
+    DoozerBootUri:         *DoozerBootUri,
 	})
 
 	// handle panic so that we remove ourselves from the pool in case of catastrophic failure

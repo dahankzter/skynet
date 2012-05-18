@@ -14,55 +14,44 @@ type DoozerServer struct {
 }
 
 type DoozerConnection struct {
-	Servers    []string
 	Connection *doozer.Conn
 	Log        *log.Logger
 	Discover   bool
+  Uri        string
+  BootUri    string
 
   connectionMutex sync.Mutex
-
-	// Internal use for discover
-	doozerInstances map[string]*DoozerServer
-  currentInstance string
 }
 
 func (d *DoozerConnection) Connect() {
-	if len(d.Servers) < 1 {
-		d.Log.Panic("Must supply at least 1 Doozer server to connect to")
+	if d.Uri == "" && d.BootUri == "" {
+		d.Log.Panic("Must supply a Doozer server or a BootUri to connect to")
 	}
 
-  var success = false
-  var err error = nil
-
-  for _, server := range d.Servers {
-    success, err = d.dial(server)
-
-    if success == true {
-      break
-    }
-  }
+  success, err := d.dial()
 
   if success == false {
     d.Log.Panic("Failed to connect to any of the supplied Doozer Servers: " + err.Error())
   }
-
-	// Let's watch doozers internal config to check for new servers
-	if d.Discover == true {
-		d.getDoozerInstances()
-		go d.monitorCluster()
-	}
 }
 
-func (d *DoozerConnection) dial(server string)  (bool, error) {
+func (d *DoozerConnection) dial()  (bool, error) {
+  d.connectionMutex.Lock()
+  defer d.connectionMutex.Unlock()
+
 	var err error
 
-	d.Connection, err = doozer.Dial(server)
+  if d.Uri != "" {
+    d.Connection, err = doozer.DialUri(d.Uri, d.BootUri)
+  } else {
+    d.Connection, err = doozer.DialUri(d.BootUri, "")
+  }
+
 	if err != nil {
 		return false, err
 	}
 
-  d.currentInstance = server
-  d.Log.Println("Connected to Doozer Instance: " + server)
+  d.Log.Println("Connected to Doozer")
 
   return true, nil
 }
@@ -133,49 +122,14 @@ func (d *DoozerConnection) Rev() (rev int64, err error) {
 	return d.Connection.Rev()
 }
 
-func (d *DoozerConnection) getDoozerInstances() {
-	d.doozerInstances = make(map[string]*DoozerServer)
-
-	rev := d.GetCurrentRevision()
-	instances, _ := d.Connection.Getdir("/ctl/cal", rev, 0, -1)
-
-	for _, i := range instances {
-    rev := d.GetCurrentRevision()
-    data, _, err := d.Get("/ctl/cal/"+i, &rev)
-    buf := bytes.NewBuffer(data)
-
-    if err == nil {
-      d.doozerInstances[i] = d.getDoozerServer(buf.String())
-    }
-	}
-}
-
 func (d *DoozerConnection) recoverFromError(err interface{}){
   if err == "EOF" {
     d.Log.Println("Lost connection to Doozer: Reconnecting...")
-    d.connectionMutex.Lock()
-    defer d.connectionMutex.Unlock()
 
+    success, _ := d.dial()
 
-    // Let's try to connect to the servers supplied in config
-    for _, server := range d.Servers {
-      success, _ := d.dial(server)
-
-      if success == true {
-        return
-      }
-    }
-
-    // If we didn't connect to one of the initially supplied servers and they enabled Auto Discovery
-    // Let's try to get a connection from one of the instances we know about
-    if len(d.doozerInstances) > 0 && d.Discover == true {
-      for _, server := range d.doozerInstances {
-        success, _ := d.dial(server.Addr)
-
-        if success == true {
-          return
-        }
-      }
+    if success == true {
+      return
     }
 
     // If we made it here we didn't find a server
@@ -185,41 +139,6 @@ func (d *DoozerConnection) recoverFromError(err interface{}){
     // Don't know how to handle, go ahead and panic
     d.Log.Panic(err)
   }
-}
-
-func (d *DoozerConnection) monitorCluster() {
-	defer func() {
-		if err := recover(); err != nil {
-      d.recoverFromError(err)
-
-      d.monitorCluster()
-		}
-	}()
-
-	for {
-		// blocking wait call returns on a change
-		ev, err := d.Connection.Wait("/ctl/cal/*", d.GetCurrentRevision())
-		if err != nil {
-			d.Log.Panic(err.Error())
-		}
-
-		buf := bytes.NewBuffer(ev.Body)
-    id := basename(ev.Path)
-
-    if buf.String() == "" && d.doozerInstances[id] != nil {
-      // Server is down, remove from list
-      d.Log.Println("Doozer instance no longer available, removing from available list")
-      delete(d.doozerInstances, id)
-
-    } else if buf.String() != "" {
-      // Server changed, check to make sure it's different first
-      if d.doozerInstances[id] == nil || d.doozerInstances[id].Key != buf.String() {
-        d.Log.Println("New Doozer instance detected, adding to available list")
-
-				d.doozerInstances[id] = d.getDoozerServer(buf.String())
-      }
-    }
-	}
 }
 
 func (d *DoozerConnection) getDoozerServer(key string) (*DoozerServer){
